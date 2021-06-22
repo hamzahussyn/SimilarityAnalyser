@@ -9,8 +9,8 @@ Esha Rashid  CS-1812262
 Hamza Hussain CS-1812264
 '''
 
-import ast
-import astor
+import ast  
+import astor 
 import math
 import json
 import re
@@ -18,13 +18,29 @@ from difflib import SequenceMatcher
 from difflib import unified_diff
 
 
-JsonObject = {"lines":'' , "length":'', "disSimilarity":'', "probableSimilarity":'', "modify":'', "ratio":'', "index":'', "tree":'', "i":0}
+JsonObject = {  
+    "lines" : '', 
+    "length" : '', 
+    "disSimilarity" : '', 
+    "probableSimilarity" : '', 
+    "modify" : '', 
+    "ratio" : '', 
+    "index" : '', 
+    "tree" : '', 
+    "i" : 0
+}
+
+JsonObjectTwo = {
+    "similarExpressions" : 0.0,
+    "similarAssignments" : 0.0,
+    "similarIterators" : 0.0,
+    "similarFunctions" : 0.0,
+    "similarIdentifiers" : 0.0
+}
 
 expr = []
 expr_2 = []
 expr_helper = []
-collect_if_1 = []
-collect_if_2 = []
 collect_if_helper = []
 collect_assign_1 = []
 collect_assign_2 = []
@@ -35,6 +51,9 @@ collect_call_helper = []
 collect_for_1 = []
 collect_for_2 = []
 collect_for_helper = []
+targetsOne = []
+targetsTwo = []
+targets = []
 
 
 '''
@@ -67,9 +86,36 @@ def compareNodes(array_one, array_two):
             else:
                 if array_two[i] == array_one[j]:
                     ratio = ratio + 1
+    if start_1 != 0:
+        return round((ratio/start_1) * 100, 2)
+    else:
+        return 0
 
-    return round((ratio/start_1) * 100, 2)
+def compareIdentifiers(array_one, array_two):
+    ratio = 0
+    if len(array_one) > len(array_two):
+        start_1 = len(array_one)
+        start_2 = len(array_two)
+        assign_1_bigger = True
+    else:
+        start_1 = len(array_two)
+        start_2 = len(array_one)
+        assign_1_bigger = False
 
+    for i in range(start_1):
+        for j in range(start_2):
+            if assign_1_bigger:
+                if array_one[i] == array_two[j]:
+                    ratio = ratio + 1
+                    break
+            else:
+                if array_two[i] == array_one[j]:
+                    ratio = ratio + 1
+                    break
+    if start_1 != 0:
+        return round((ratio/(start_1)) * 100, 2)
+    else:
+        return 0                
 
 def compareExpr():
     ratio = 0
@@ -105,7 +151,8 @@ def compareExpr():
             match = 0
     if start_1 != 0:
         return (ratio / start_1) * 100
-
+    else:
+        return 0    
 
 '''
 Node Transformer Class
@@ -166,6 +213,9 @@ class nodeTransformer(ast.NodeTransformer):
 
 class nodeVisitor(ast.NodeVisitor):
 
+    def visit_Name(self, node):
+        targets.append(node.id)
+
     def visit_Assign(self, node):
         this_assignment = []
         for target in node.targets:
@@ -191,13 +241,13 @@ class nodeVisitor(ast.NodeVisitor):
         this_comparer = []
         if hasattr(node.left, 'id'):
             this_comparer.append(node.left.id)
-        else:
+        elif hasattr(node.left, 'value'):
             this_comparer.append(node.left.value)     
         this_comparer.append(astor.dump_tree(node.ops))
         for c in node.comparators:
             if hasattr(c, 'id'):
                 this_comparer.append(node.left.id)
-            else:
+            elif hasattr(c, 'value'):
                 this_comparer.append(c.value)
         collect_if_helper.append(this_comparer)
 
@@ -209,6 +259,21 @@ class nodeVisitor(ast.NodeVisitor):
         # print(node.iter.id)
         collect_for_helper.append(this_for)
 
+    def visit_Call(self, node):
+        this_call = []
+        # print(astor.dump_tree(node.func))
+        if hasattr(node.func, 'id'):
+            this_call.append(node.func.id)
+        for arg in node.args:
+            if hasattr(arg, 'value'):
+                this_call.append(arg.value)
+            elif hasattr(arg, 'id'):
+                this_call.append(arg.id)
+            else:
+                this_call.append(astor.dump_tree(arg))
+        collect_call_helper.append(this_call)
+        self.generic_visit(node)    
+
 
 '''
 Unified Diff Algorithm
@@ -218,7 +283,6 @@ mainly to identify disimilarity and average out the similarity of
 longest common sequence and the probable similarity in the code.
 '''
 
-
 def Unified_Diff_Algorithm(treeOne, treeTwo):
     treeline = astor.dump_tree(treeOne).split('\n')
     treeline2 = astor.dump_tree(treeTwo).split('\n')
@@ -226,24 +290,19 @@ def Unified_Diff_Algorithm(treeOne, treeTwo):
 
     n = astor.dump_tree(treeOne)
 
-    lineMinus = []
-    linePlus = []
-
     percentage = 0
     percentageTwo = 0
 
-    count1 = -1
-    count2 = -1
+    #count1 = -1
+    #count2 = -1
 
     for line in unified_diff(treeline, treeline2, n=0):
         if line[0] == '-':
-            lineMinus.append(line)
             if percentage == 0:
                 percentage = (len(line)/len(n))*100
             else:
                 percentage = percentage + (len(line))
         if line[0] == '+':
-            count2 = count2 + 1
             if percentageTwo == 0:
                 percentageTwo = (len(line)/len(n))*100
             else:
@@ -252,11 +311,9 @@ def Unified_Diff_Algorithm(treeOne, treeTwo):
     Dissimilarity = round((percentage / len(n)) * 100, 2)
     Similarity = round(100 - (percentage / len(n)) * 100, 2)
     codeToAdd = round((percentageTwo / len(n)) * 100, 2)
-    matchedSequences = round(SequenceMatcher(
-        None, ast.dump(treeOne), ast.dump(treeTwo)).ratio() * 100, 2)
+    matchedSequences = round(SequenceMatcher(None, ast.dump(treeOne), ast.dump(treeTwo)).ratio() * 100, 2)
     amplify = Similarity + matchedSequences
-    amplify = amplify/math.ceil(amplify/100.0) * \
-        nearestTen(Similarity, matchedSequences)
+    amplify = amplify/math.ceil(amplify/100.0) * nearestTen(Similarity, matchedSequences)
     result = round(amplify / 100, 2)
 
     JsonObject['lines'] = f"Total lines in AST = {len(treeline)}"
@@ -265,18 +322,26 @@ def Unified_Diff_Algorithm(treeOne, treeTwo):
     JsonObject['probableSimilarity'] = f"Probable Similarity = {Similarity} %"
     JsonObject['modify'] = f"Code to add from reference to candidate will amount to {codeToAdd} %"
     JsonObject['ratio'] = f"Ratio of Matching sequences found = {matchedSequences} %"
-    JsonObject['index'] = (f"Similarity Index: {result} %")
+    JsonObject['index'] = f"Similarity Index: {result} %"
     JsonObject['i'] = result
     JsonObject['tree'] = n
 
 #in {(len(treeline)-count1) if(len(treeline)-count1)>0 else 0} lines of AST
 #in {count1} lines of AST
 #of candidate and {count2} lines of AST
+
+'''
+Functions to export
+'''
 def analyseSimilarity(codeOne, codeTwo):
 
     docStringRegEx = r'"""[\s\S]*?"""'
     codeOne = re.sub(docStringRegEx, '', codeOne)
     codeTwo = re.sub(docStringRegEx, '', codeTwo)
+    
+    docStringRegExTwo = r'\'\'\'[\s\S]*?\'\'\''
+    codeOne = re.sub(docStringRegExTwo, '', codeOne)
+    codeTwo = re.sub(docStringRegExTwo, '', codeTwo)
 
     treeOne = ast.parse(codeOne)
     treeTwo = ast.parse(codeTwo)
@@ -291,17 +356,15 @@ def analyseSimilarity(codeOne, codeTwo):
 
     return json.dumps(JsonObject)
 
-'''
+
 def analyseNodes(codeOne, codeTwo):
 
     treeOne = ast.parse(codeOne)
     treeTwo = ast.parse(codeTwo)
 
+    global expr
     global expr_2 
-    global expr_helper 
-    global collect_if_1 
-    global collect_if_2 
-    global collect_if_helper 
+    global expr_helper  
     global collect_assign_1 
     global collect_assign_2 
     global collect_assign_helper
@@ -310,7 +373,11 @@ def analyseNodes(codeOne, codeTwo):
     global collect_call_helper 
     global collect_for_1 
     global collect_for_2 
-    global collect_for_helper 
+    global collect_for_helper
+    global targetsOne
+    global targetsTwo
+    global targets 
+    global JsonObjectTwo
 
     # VISITING NODES HERE
 
@@ -328,9 +395,8 @@ def analyseNodes(codeOne, codeTwo):
     collect_assign_1 = collect_assign_helper
     collect_assign_helper = []
 
-    collect_if_1 = collect_if_helper
-    collect_if_helper = []
-
+    targetsOne = targets
+    targets = []
 
     nodeVisitor().visit(treeTwo)
     # helpers go here
@@ -343,24 +409,25 @@ def analyseNodes(codeOne, codeTwo):
     expr_2 = expr_helper
     expr_helper = []
 
-    collect_if_2 = collect_if_helper
-    collect_if_helper = []
-
     collect_assign_2 = collect_assign_helper
     collect_assign_helper = []
 
-    # Printing goes here
-
-    print("\n## FRIRST PASS ##")
+    targetsTwo = targets
+    targets = []
 
     r = compareExpr()
-    print(f"\n\nRatio of Similar Expression Nodes: {r}/100")
-
+    JsonObjectTwo["similarExpressions"] = r
+    
     r = compareNodes(collect_assign_1, collect_assign_2)
-    print(f"Ratio of Similar Assignment Nodes: {r}/100")
-
-
+    JsonObjectTwo["similarAssignments"] = r
+    
     r = compareNodes(collect_for_1, collect_for_2)
-    print(f"Ratio of Similar for loops: {r}/100")
-'''
-        
+    JsonObjectTwo["similarIterators"] = r
+
+    r = compareNodes(collect_call_1, collect_call_2)
+    JsonObjectTwo["similarFunctions"] = r
+
+    r = compareIdentifiers(targetsOne, targetsTwo)
+    JsonObjectTwo["similarIdentifiers"] = r
+
+    return json.dumps(JsonObjectTwo)       

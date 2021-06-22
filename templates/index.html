@@ -17,11 +17,22 @@
         .col {
             width: 50%;
             float: left;
-
         }
 
         .col2 {
-            display: flex;
+            float: left;
+        }
+
+        .colCardsSide {
+            width: 25%;
+        }
+
+        .colCards {
+            width: 70%;
+        }
+
+        .colCardsSide2 {
+            width: 5%;
         }
     </style>
     <script>
@@ -36,6 +47,7 @@
             $('#code2').hide();
             $('.card1V').hide();
             $('.card2V').hide();
+            $('.card0V').hide();
 
             $('#initiate').click(function (e) {
                 $.ajax({
@@ -72,7 +84,7 @@
                             <p class="card-text">${response['disSimilarity']}</p>
                             <p class="card-text">${response['probableSimilarity']}</p>
                             <p class="card-text">${response['modify']}</p>
-                            <p class="card-text">${response['ratio']} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </p> <br>
+                            <p class="card-text">${response['ratio']} </p> <br>
                             <span>
                                 <p class="card-text">${response['index']}</p>
                                 <div class="progress">
@@ -102,7 +114,7 @@
                             <p class="card-text">${response['disSimilarity']}</p>
                             <p class="card-text">${response['probableSimilarity']}</p>
                             <p class="card-text">${response['modify']}</p>
-                            <p class="card-text">${response['ratio']} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p> <br>
+                            <p class="card-text">${response['ratio']} </p> <br>
                             <span>
                                 <p class="card-text">${response['index']}</p>
                                 <div class="progress">
@@ -119,6 +131,22 @@
                     error: function (error) {
                         console.log(error);
                     }
+                });
+                $.ajax({
+                    url: '/api/compareNodes',
+                    success: function (response) {
+                        console.log(response);
+                        $('.card0V').show();
+                        $('.card0').empty();
+                        $('.card0').append(`
+                            <h6 class="card-title">Similar looking assignments: ${response['similarAssignments']} %</h6>
+                            <h6 class="card-title">Similar looking expressions: ${response['similarExpressions']} %</h6>
+                            <h6 class="card-title">Similar looking function calls: ${response['similarFunctions']} %</h6>
+                            <h6 class="card-title">Similar looking identifiers and invoked functions: ${response['similarIdentifiers']} %</h6>
+                            <h6 class="card-title">Similar looking iterators: ${response['similarIterators']} %</h6>
+                        `)
+                    },
+                    error: function (error) { console.log(error); }
                 });
             })
 
@@ -185,7 +213,7 @@
             <button style=" margin-left: 10px;" type="button" id="initiate" class="btn btn-dark">Compare</button>
         </div>
 
-        <section>
+        <div style="height:50%">
             <div class="col">
                 <pre>
                     <code class="language-python" id="code1"></code>
@@ -196,31 +224,44 @@
                     <code class="python" id="code2"></code>
                 </pre>
             </div>
-        </section>
+        </div>
 
-        <section style="display: inline-flex;">
-            <div style="padding-left: 100px; padding-right: 10px; ">
-                <div class="card bg-light mb-3 card1V">
-                    <div class="card-header">Analysis of first AST</div>
-                    <div class="card-body card1">
+        <section>
+            <div class="col2 colCardsSide"></div>
+            <div class="colCards col2" style="margin-left: 15%; padding-right: -50%; display: inline-block;">
+                <div>
+                    <div class="card bg-light mb-3 card0V">
+                        <div class="card-header">Similar looking nodes</div>
+                        <div class="card-body card0">
 
+                        </div>
                     </div>
                 </div>
             </div>
-            <div style="padding-left: 10px; padding-right: 10px; ">
-                <div class="card bg-light mb-3 card2V">
-                    <div class="card-header">Analysis of second AST</div>
-                    <div class="card-body card2">
+            <div class="col2 colCardsSide2"></div>
+        </section>
 
+        <div style="padding-left: 15%; padding-right: 15%;">
+            <div style="display: inline-flex;">
+                <div style="padding-right: 10px;">
+                    <div class="card bg-light mb-3 card1V">
+                        <div class="card-header">Analysis of first AST</div>
+                        <div class="card-body card1">
+
+                        </div>
+                    </div>
+                </div>
+                <div style="padding-left: 10px;">
+                    <div class="card bg-light mb-3 card2V">
+                        <div class="card-header">Analysis of second AST</div>
+                        <div class="card-body card2">
+
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-        </section>
-
-        <footer>
-
-        </footer>
 </body>
 
 </html>

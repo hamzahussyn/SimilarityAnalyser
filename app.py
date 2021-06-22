@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request
 from SimilarityAnalyzer import analyseSimilarity
+from SimilarityAnalyzer import analyseNodes
 import json
 
 app = Flask(__name__)
@@ -36,3 +37,10 @@ def resultsOfASTTwo():
    global codeTwo
    jsonObject = analyseSimilarity(codeTwo, codeOne) 
    return json.loads(jsonObject)
+
+@app.route("/api/compareNodes")
+def compareNodes():
+   global codeOne
+   global codeTwo
+   jsonObject = analyseNodes(codeOne, codeTwo) 
+   return json.loads(jsonObject)      
