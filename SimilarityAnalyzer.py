@@ -1,14 +1,3 @@
-'''
-'PYTHON CODE SIMILARITY ANALYZER'
-
-Created for the course of Artificial Intelligence,
-taught by Sir Sikandar Khan at SZABIST.
-
-Authors:
-Esha Rashid  CS-1812262
-Hamza Hussain CS-1812264
-'''
-
 import ast  
 import astor 
 import math
